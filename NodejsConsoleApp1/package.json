@@ -1,0 +1,13 @@
+{
+  "name": "nodejs-console-app1",
+  "version": "0.0.0",
+  "description": "NodejsConsoleApp1",
+  "main": "app.js",
+  "author": {
+    "name": "dream_000"
+  },
+  "dependencies": {
+    "mysql": "^2.13.0",
+    "websocket": "^1.0.24"
+  }
+}
