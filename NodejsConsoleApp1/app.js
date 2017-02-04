@@ -14,7 +14,6 @@ server.listen(webSocketsServerPort, function () {
 var wsServer = new webSocketServer({
     httpServer: server
 });
-
 //connect to mysql db
 var sqlConnection = mysql.createConnection({
     host: 'localhost',
@@ -23,14 +22,11 @@ var sqlConnection = mysql.createConnection({
     database: 'treasurehunt'
 });
 
-sqlConnection.connect();
-
-// coonect to WebSocket 
+// connect WebSocket 
 wsServer.on('request', function (request) {
 
     console.log((new Date()) + ' Connection from origin ' + request.origin + '.');
-
-    
+        
     var connection = request.accept('echo-protocol', request.origin);
     console.log((new Date()) + ' Connection accepted.');
 
@@ -39,25 +35,35 @@ wsServer.on('request', function (request) {
         if (message.type === 'utf8') {
             console.log((new Date()) + ' Received Message from : ' + message.utf8Data);
 
-            //mysql query test
-            var query = sqlConnection.query("insert into user_list(usn, nickname, tot_point) values(?, ?, ?)", ['0002', 'LovelyHyun', '100'], function () {
-                console.log(query.sql);
-            });
+            //parse json
+            try {
+                var json = JSON.parse(message.utf8Data);
+                var flag = json["flag"];
 
-            sqlConnection.query('select * from user_list', function (err, rows, cols) {
-                if (err) throw err;
+                // Server >> Clients according to flag
+                switch (flag) {
 
-                console.log(rows);
+                    //TODO: write all case process like 'case 6'                    
+                    case 6:
+                        var nickname = json["nickname"];
+                        
+                        sqlConnection.query('select usn, tot_point from user_list where nickname = \'' + nickname + '\'', function (err, rows, cols) {
+                            if (err) throw err;
 
-            });
+                            obj = new Object()
+                            obj["flag"] = 6;
+                            obj["user_info"] = rows;
+                            console.log(JSON.stringify(obj));
+                            wsServer.broadcastUTF(JSON.stringify(obj));
 
-            // Server >> Clients
-            wsServer.broadcastUTF("{\"flag\":3, \"Games\":[{\"game_id\":\"1234\"},{\"game_id\":\"1235\"}]}");
+                        });
+                        break;
+                }
+            } catch (exc) {
+                console.log("wrong data type");
+                wsServer.broadcastUTF("wrong data type");
+            }                     
         }
     });
-
-
-    
 });
 
-sqlConnection.end();
