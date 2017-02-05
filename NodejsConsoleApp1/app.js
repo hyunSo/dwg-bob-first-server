@@ -21,6 +21,21 @@ var sqlConnection = mysql.createConnection({
     password: 'timetofly1',
     database: 'treasurehunt'
 });
+/* TODO : add flags as a constant
+//client to server
+const	REQUEST_USER_TREASURE_LIST_FLAG	1
+const	REQUEST_USER_MADE_GAME_FLAG	2
+const	REQUEST_USER_PARTICIPATING_GAME_LIST_FLAG	3
+const	REQUEST_GAME_JOIN_USER_LIST_FLAG	4
+const	REQUEST_GAME_TREASURE_INFO_FLAG	5
+const	REQUEST_USER_INFO_FLAG	6
+//server to client
+const	SET_USER_INFO_FLAG	11
+const	SET_GAME_INFO_FLAG	12
+const	SET_GAME_STATUS_END_FLAG	13
+const	SET_USER_JOIN_FLAG	14
+const	SET_USER_GET_TREASURE_FLAG	15
+*/
 
 // Connect to WebSocket.
 wsServer.on('request', function (request) {
