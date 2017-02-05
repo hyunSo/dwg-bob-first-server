@@ -4,7 +4,7 @@ var webSocketsServerPort = 8081;
 // Set WebSocket.
 var webSocketServer = require('websocket').server;
 var http = require('http');
-var mysql = require('mysql');// mysql module
+var mysql = require('mysql');// MySQL module
 
 var server = http.createServer(function (request, response) { });
 server.listen(webSocketsServerPort, function () {
