@@ -4,11 +4,11 @@ var webSocketsServerPort = 8081;
 // Set WebSocket.
 var webSocketServer = require('websocket').server;
 var http = require('http');
-var mysql = require('mysql');// mysql module
+var mysql = require('MYSQL');// mysql module
 
 var server = http.createServer(function (request, response) { });
 server.listen(webSocketsServerPort, function () {
-    console.log(`${(new Date())} Server is listening on port ${webSocketsServerPort}`);
+    console.log(`Server is listening on port ${webSocketsServerPort}`);
 });
 
 var wsServer = new webSocketServer({
@@ -25,15 +25,15 @@ var sqlConnection = mysql.createConnection({
 // Connect to WebSocket.
 wsServer.on('request', function (request) {
 
-    console.log(`${(new Date())} Connection from origin request.origin.`);
+    console.log('Connection from origin request.origin.');
         
     var connection = request.accept('echo-protocol', request.origin);
-    console.log(`${(new Date())} Connection accepted.`);
+    console.log('Connection accepted.');
 
     // Client >> Server
     connection.on('message', function (message) {
         if (message.type === 'utf8') {
-            console.log(`${(new Date())} Received Message from : ${message.utf8Data}`);
+            console.log(`Received Message from : ${message.utf8Data}`);
 
             // Parse json.
             try {
