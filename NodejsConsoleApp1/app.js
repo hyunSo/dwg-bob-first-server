@@ -21,21 +21,25 @@ var sqlConnection = mysql.createConnection({
     password: 'timetofly1',
     database: 'treasurehunt'
 });
-/*
-* TODO(dreamchaser3) : add flags as a constant
-* const	REQUEST_USER_TREASURE_LIST_FLAG	1
-* const	REQUEST_USER_MADE_GAME_FLAG	2
-* const	REQUEST_USER_PARTICIPATING_GAME_LIST_FLAG	3
-* const	REQUEST_GAME_JOIN_USER_LIST_FLAG	4
-* const	REQUEST_GAME_TREASURE_INFO_FLAG	5
-* const	REQUEST_USER_INFO_FLAG	6
 
-* const	SET_USER_INFO_FLAG	11
-* const	SET_GAME_INFO_FLAG	12
-* const	SET_GAME_STATUS_END_FLAG	13
-* const	SET_USER_JOIN_FLAG	14
-* const	SET_USER_GET_TREASURE_FLAG	15
-*/
+/**
+ * An enum for communication protocol flags.
+ * @enum {number}
+ */
+const Flag = {
+    REQUEST_USER_TREASURE_LIST: 1,
+    REQUEST_USER_MADE_GAME: 2,
+    REQUEST_USER_PARTICIPATING_GAME_LIST: 3,
+    REQUEST_GAME_JOIN_USER_LIST: 4,
+    REQUEST_GAME_TREASURE_INFO: 5,
+    REQUEST_USER_INFO: 6,
+
+    SET_USER_INFO: 11,
+    SET_GAME_INFO: 12,
+    SET_GAME_STATUS_END: 13,
+    SET_USER_JOIN: 14,
+    SET_USER_GET_TREASURE: 15,
+};
 
 // Connect to WebSocket.
 wsServer.on('request', function (request) {
@@ -57,20 +61,19 @@ wsServer.on('request', function (request) {
 
                 // Server >> Clients according to flag
                 switch (flag) {
-
                     // TODO: Write all case process like 'case 6' below.
 
-                    case 6:// Get the user's information and send to Client.
+                    case Flag.REQUEST_USER_INFO:
                         var nickname = json['nickname'];
                         var sql = `select usn, tot_point from user_list where nickname = '${nickname}'`;
-
+                        
                         sqlConnection.query(sql, function (err, rows, cols) {
                             if (err) {
                                 console.log('Wrong Parameter.');
                                 wsServer.broadcastUTF('Wrong Parameter.');
                             } else {
                                 obj = new Object();
-                                obj['flag'] = 6;
+                                obj['flag'] = Flag.REQUEST_USER_INFO;
                                 obj['user_info'] = rows;
                                 console.log(JSON.stringify(obj));
                                 wsServer.broadcastUTF(JSON.stringify(obj));
