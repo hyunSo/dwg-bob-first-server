@@ -33,6 +33,7 @@ const Flag = {
     REQUEST_GAME_JOIN_USER_LIST: 4,
     REQUEST_GAME_TREASURE_INFO: 5,
     REQUEST_USER_INFO: 6,
+    REQUEST_USER_POSSIBLE_GAME_LIST: 7,
 
     SET_USER_INFO: 11,
     SET_GAME_INFO_GAMELIST: 12,
@@ -60,19 +61,18 @@ wsServer.on('request', function (request) {
             try {
                 var json = JSON.parse(message.utf8Data);
                 var flag = json['flag'];
-
+                
                 // Server >> Clients according to flag
                 switch (flag) {
-                    // TODO: Write all case process like 'case 6' below.
-
+                    
                     case Flag.REQUEST_USER_INFO:
                         var nickname = json['nickname'];
                         var sql = `select usn, tot_point from user_list where nickname = '${nickname}'`;
                         
                         sqlConnection.query(sql, function (err, rows, cols) {
                             if (err) {
-                                console.log('Wrong Parameter.');
-                                wsServer.broadcastUTF('Wrong Parameter.');
+                                console.log(`Wrong Parameter at flag: ${flag}.`);
+                                wsServer.broadcastUTF(`Wrong Parameter at flag: ${flag}.`);
                             } else {
                                 obj = new Object();
                                 obj['flag'] = Flag.REQUEST_USER_INFO;
@@ -83,166 +83,199 @@ wsServer.on('request', function (request) {
 
                         });
                         break;
-                    case Flag.SET_USER_INFO:
-                        var nickname = json['nickname'];
-                        var sql = `insert into user_list(nickname, tot_point) values ('${nickname}', 0)`;
-                        sqlConnection.query(sql, function (err, rows, cols) {
-                            if (err) {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_USER_INFO;
-                                obj['message'] = 'BadRequest';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
-                            } else {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_USER_INFO;
-                                obj['message'] = 'Success';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
-                            }
-                        });
-                        break;
-
-                    case Flag.SET_GAME_INFO_GAMELIST:
-                        var game_name = json['game_name'];
-                        var treasure_count = json['treasure_count'];
-                        var maker_id = json['maker_id'];
-                        var sql = `insert into game_list(game_name, treasure_count, maker_id, status, participant)
-                                    values ('${game_name}', ${treasure_count}, ${maker_id}, 1, 0)`;
-                        sqlConnection.query(sql, function (err, rows, cols) {
-                            if (err) {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_GAME_INFO_GAMELIST;
-                                obj['message'] = 'BadRequest';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
-                            } else {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_GAME_INFO_GAMELIST;
-                                obj['message'] = 'Success';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
-                            }
-                        });
-                        break;
-
-                    case Flag.SET_GAME_INFO_TREASURELIST:
-                        var treasure_name = json['treasure_name'];
-                        var description = json['description'];
-                        var game_id = json['game_id'];
-                        var location = json['location'];
-                        var point = json['point'];
-                        var catchgame_cat = json['catchgame_cat'];
-                        var sql = `insert into treasure_list(treasure_name, description, game_id, location, point, catchgame_cat)
-                                    values ('${treasure_name}', '${description}', ${game_id}, '${location}', ${point}, ${catchgame_cat})`;
-                        sqlConnection.query(sql, function (err, rows, cols) {
-                            if (err) {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_GAME_INFO_TREASURELIST;
-                                obj['message'] = 'BadRequest';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
-                            } else {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_GAME_INFO_TREASURELIST;
-                                obj['message'] = 'Success';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
-                            }
-                        });
-                        break;
-
-                    case Flag.SET_GAME_STATUS_END:
-                        var game_id = json['game_id'];
-                        var sql = `update game_list set status = 2 where participant = 0 and game_id = ${game_id}`;
-                        sqlConnection.query(sql, function (err, rows, cols) {
-                            if (err) {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_GAME_STATUS_END;
-                                obj['message'] = 'BadRequest';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
-                            } else if (rows.affectedRows == 1) {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_GAME_STATUS_END;
-                                obj['message'] = 'Success';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
-                            } else if (rows.affectedRows == 0) {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_GAME_STATUS_END;
-                                obj['message'] = 'UserExists';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
-                            }
-                        });
-                        break;
-
-                    case Flag.SET_USER_JOIN_GAMELIST:
-                        var game_id = json['game_id'];
-                        var sql = `update game_list set participant = participant +1 where game_id = ${game_id}`;
-                        sqlConnection.query(sql, function (err, rows, cols) {
-                            if (err) {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_USER_JOIN_GAMELIST;
-                                obj['message'] = 'BadRequest';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
-                            } else {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_USER_JOIN_GAMELIST;
-                                obj['message'] = 'Success';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
-                            }
-                        });
-                        break;
-
-                    case Flag.SET_USER_JOIN_JOINEDLIST:
+                    case Flag.REQUEST_USER_TREASURE_LIST: 
                         var usn = json['usn'];
-                        var game_id = json['game_id'];
-                        var sql = `insert into user_joined_game(usn, game_id, point) values (${usn}, ${game_id}, 0)`;
+                        var sql = `select * from user_treasure natural join treasure_list where usn = ${usn}`;
+
                         sqlConnection.query(sql, function (err, rows, cols) {
                             if (err) {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_USER_JOIN_JOINEDLIST;
-                                obj['message'] = 'BadRequest';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
+                                console.log(`Wrong Parameter at flag: ${flag}.`);
+                                wsServer.broadcastUTF(`Wrong Parameter at flag: ${flag}.`);
                             } else {
                                 obj = new Object();
-                                obj['flag'] = Flag.SET_USER_JOIN_JOINEDLIST;
-                                obj['message'] = 'Success';
+                                obj['flag'] = Flag.REQUEST_USER_TREASURE_LIST;
+                                obj['user_treasure_list'] = rows;
                                 console.log(JSON.stringify(obj));
                                 wsServer.broadcastUTF(JSON.stringify(obj));
                             }
+
+                        });
+                        break;
+                    case Flag.REQUEST_USER_MADE_GAME:
+                        var usn = json['usn'];                        
+                        var sql = `select * from user_made_game natural join game_list where usn = ${usn}`;
+                        
+                        sqlConnection.query(sql, function (err, rows, cols) {
+                            if (err) {
+                                console.log(`Wrong Parameter at flag: ${flag}.`);
+                                wsServer.broadcastUTF(`Wrong Parameter at flag: ${flag}.`);
+                            } else {
+                                obj = new Object();
+                                obj['flag'] = Flag.REQUEST_USER_MADE_GAME;
+                                obj['user_made_game'] = rows;
+                                console.log(JSON.stringify(obj));
+                                wsServer.broadcastUTF(JSON.stringify(obj));
+                            }
+
+                        });
+                        break;
+                    case Flag.REQUEST_USER_PARTICIPATING_GAME_LIST:
+                        var usn = json['usn'];
+                        var sql = `select T.game_id, U.point, game_name, treasure_count, status, participant, 
+                                   treasure_id, treasure_name, description, location, T.point as treasure_point, catchgame_cat 
+                                   from user_joined_game U natural join game_list G, treasure_list T 
+                                   where U.usn = 1 and G.status = 1 and G.game_id = T.game_id`;
+                        
+                        sqlConnection.query(sql, function (err, rows, cols) {
+                            if (err) {
+                                console.log(`Wrong Parameter at flag: ${flag}.`);
+                                wsServer.broadcastUTF(`Wrong Parameter at flag: ${flag}.`);
+                            } else {
+                                obj = new Object();                                
+                                games = [];
+                                treasures = [];
+                                game = new Object();
+
+                                // Make json not to be redundant.(Because one game can have many treasures.)                                                      
+                                for (var i = 0; i < rows.length-1; i++){
+                                    treasure = new Object();
+
+                                    treasure['treasure_id'] = rows[i].treasure_id;
+                                    treasure['treasure_name'] = rows[i].treasure_name;
+                                    treasure['description'] = rows[i].description;
+                                    treasure['location'] = rows[i].location;
+                                    treasure['treasure_point'] = rows[i].treasure_point;
+                                    treasure['catchgame_cat'] = rows[i].catchgame_cat;
+
+                                    treasures.push(treasure);
+                                                                        
+                                    if (rows[i].game_id != rows[i+1].game_id) {
+                                        game['game_id'] = rows[i].game_id;
+                                        game['game_name'] = rows[i].game_name;
+                                        game['treasure_count'] = rows[i].treasure_count;
+                                        game['status'] = rows[i].status;
+                                        game['participant'] = rows[i].participant;
+                                        game['point'] = rows[i].point;
+                                        game['treasures'] = treasures;
+                                        games.push(game);
+
+                                        game = new Object();
+                                        treasures = [];                                
+
+                                    }                                   
+
+                                }
+                                // Push the last index.
+                                treasure = new Object();
+
+                                treasure['treasure_id'] = rows[rows.length - 1].treasure_id;
+                                treasure['treasure_name'] = rows[rows.length - 1].treasure_name;
+                                treasure['description'] = rows[rows.length - 1].description;
+                                treasure['location'] = rows[rows.length - 1].location;
+                                treasure['treasure_point'] = rows[rows.length - 1].treasure_point;
+                                treasure['catchgame_cat'] = rows[rows.length - 1].catchgame_cat;
+
+                                treasures.push(treasure);
+
+                                game['game_id'] = rows[rows.length - 1].game_id;
+                                game['game_name'] = rows[rows.length - 1].game_name;
+                                game['treasure_count'] = rows[rows.length - 1].treasure_count;
+                                game['status'] = rows[rows.length - 1].status;
+                                game['participant'] = rows[rows.length - 1].participant;
+                                game['point'] = rows[rows.length - 1].point;
+                                game['treasures'] = treasures;
+                                games.push(game);
+                               
+                                obj['flag'] = Flag.REQUEST_USER_PARTICIPATING_GAME_LIST;
+                                obj['user_participating_game_list'] = games;
+                                                                                           
+                                console.log(JSON.stringify(obj));
+                                wsServer.broadcastUTF(JSON.stringify(obj));
+                            }
+
+                        });
+                        break;
+                    case Flag.REQUEST_USER_POSSIBLE_GAME_LIST:
+                        var usn = json['usn'];
+                        var sql = `select game_id, game_name, treasure_count, status, participant, treasure_id, 
+                                   treasure_name, description, location, point, catchgame_cat 
+                                   from game_list natural join treasure_list
+                                   where game_id not in (select game_id from user_joined_game where usn = ${usn})						
+                                   and status = 1`;
+                        
+                        sqlConnection.query(sql, function (err, rows, cols) {
+                            if (err) {
+                                console.log(`Wrong Parameter at flag: ${flag}.`);
+                                wsServer.broadcastUTF(`Wrong Parameter at flag: ${flag}.`);
+                            } else {
+                                obj = new Object();
+                                games = [];
+                                treasures = [];
+                                game = new Object();
+
+                                // Make json not to be redundant.(Because one game can have many treasures.)                                                      
+                                for (var i = 0; i < rows.length - 1; i++) {
+                                    treasure = new Object();
+
+                                    treasure['treasure_id'] = rows[i].treasure_id;
+                                    treasure['treasure_name'] = rows[i].treasure_name;
+                                    treasure['description'] = rows[i].description;
+                                    treasure['location'] = rows[i].location;
+                                    treasure['point'] = rows[i].point;
+                                    treasure['catchgame_cat'] = rows[i].catchgame_cat;
+
+                                    treasures.push(treasure);
+
+                                    if (rows[i].game_id != rows[i + 1].game_id) {
+                                        game['game_id'] = rows[i].game_id;
+                                        game['game_name'] = rows[i].game_name;
+                                        game['treasure_count'] = rows[i].treasure_count;
+                                        game['status'] = rows[i].status;
+                                        game['participant'] = rows[i].participant;                                        
+                                        game['treasures'] = treasures;
+                                        games.push(game);
+
+                                        game = new Object();
+                                        treasures = [];
+
+                                    }
+
+                                }
+                                // Push the last index.
+                                treasure = new Object();
+
+                                treasure['treasure_id'] = rows[rows.length - 1].treasure_id;
+                                treasure['treasure_name'] = rows[rows.length - 1].treasure_name;
+                                treasure['description'] = rows[rows.length - 1].description;
+                                treasure['location'] = rows[rows.length - 1].location;
+                                treasure['point'] = rows[rows.length - 1].point;
+                                treasure['catchgame_cat'] = rows[rows.length - 1].catchgame_cat;
+
+                                treasures.push(treasure);
+
+                                game['game_id'] = rows[rows.length - 1].game_id;
+                                game['game_name'] = rows[rows.length - 1].game_name;
+                                game['treasure_count'] = rows[rows.length - 1].treasure_count;
+                                game['status'] = rows[rows.length - 1].status;
+                                game['participant'] = rows[rows.length - 1].participant;                               
+                                game['treasures'] = treasures;
+                                games.push(game);
+
+                                obj['flag'] = Flag.REQUEST_USER_POSSIBLE_GAME_LIST;
+                                obj['user_possible_game_list'] = games;
+
+                                console.log(JSON.stringify(obj));
+                                wsServer.broadcastUTF(JSON.stringify(obj));
+                            }
+
                         });
                         break;
 
-                    case Flag.SET_USER_GET_TREASURE:
-                        var usn = json['usn'];
-                        var treasure_id = json['treasure_id'];
-                        var sql = `insert into user_treasure(usn, treasure_id, used) values (${usn}, ${treasure_id}, 0)`;
-                        sqlConnection.query(sql, function (err, rows, cols) {
-                            if (err) {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_USER_GET_TREASURE;
-                                obj['message'] = 'BadRequest';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
-                            } else {
-                                obj = new Object();
-                                obj['flag'] = Flag.SET_USER_GET_TREASURE;
-                                obj['message'] = 'Success';
-                                console.log(JSON.stringify(obj));
-                                wsServer.broadcastUTF(JSON.stringify(obj));
-                            }
-                        });
-                        break;
+                        // TODO: Code set flags.
                 }
             } catch (exc) {
-                console.log('Wrong data type.');
-                wsServer.broadcastUTF('Wrong data type.');
+                console.log(`Wrong data type at flag: ${flag}.`);
+                wsServer.broadcastUTF(`Wrong data type at flag: ${flag}.`);
             }                     
         }
     });
