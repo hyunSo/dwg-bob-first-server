@@ -16,10 +16,10 @@ var wsServer = new webSocketServer({
 });
 // Connect to mysql db.
 var sqlConnection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'timetofly1',
-    database: 'treasurehunt'
+    host: 'aasub3hy4p0s9l.crwpu2cl615x.ap-northeast-2.rds.amazonaws.com',
+    user: 'bobfirst',
+    password: 'bobfirst1',    
+    database: 'TreasureHunt'
 });
 
 /**
@@ -71,6 +71,7 @@ wsServer.on('request', function (request) {
                         
                         sqlConnection.query(sql, function (err, rows, cols) {
                             if (err) {
+                                console.log(err);
                                 console.log(`Wrong Parameter at flag: ${flag}.`);
                                 wsServer.broadcastUTF(`Wrong Parameter at flag: ${flag}.`);
                             } else {
@@ -131,63 +132,23 @@ wsServer.on('request', function (request) {
                                 console.log(`Wrong Parameter at flag: ${flag}.`);
                                 wsServer.broadcastUTF(`Wrong Parameter at flag: ${flag}.`);
                             } else {
-                                obj = new Object();                                
-                                games = [];
-                                treasures = [];
-                                game = new Object();
-
-                                // Make json not to be redundant.(Because one game can have many treasures.)                                                      
-                                for (var i = 0; i < rows.length-1; i++){
-                                    treasure = new Object();
-
-                                    treasure['treasure_id'] = rows[i].treasure_id;
-                                    treasure['treasure_name'] = rows[i].treasure_name;
-                                    treasure['description'] = rows[i].description;
-                                    treasure['location'] = rows[i].location;
-                                    treasure['treasure_point'] = rows[i].treasure_point;
-                                    treasure['catchgame_cat'] = rows[i].catchgame_cat;
-
-                                    treasures.push(treasure);
-                                                                        
-                                    if (rows[i].game_id != rows[i+1].game_id) {
-                                        game['game_id'] = rows[i].game_id;
-                                        game['game_name'] = rows[i].game_name;
-                                        game['treasure_count'] = rows[i].treasure_count;
-                                        game['status'] = rows[i].status;
-                                        game['participant'] = rows[i].participant;
-                                        game['point'] = rows[i].point;
-                                        game['treasures'] = treasures;
-                                        games.push(game);
-
-                                        game = new Object();
-                                        treasures = [];                                
-
-                                    }                                   
-
+                                var obj = new Object();                                
+                                var games = [];                                
+                                
+                                for (i = 0; i < rows.length; i++) {
+                                    // Get the correct game object.
+                                    var game = createGame(games, rows[i], flag);
+                                    var treasure = createTreasure(rows[i]);
+                                    
+                                    game['treasures'].push(treasure); // Add latest treasure to end of treasures list.
+                                    
                                 }
-                                // Push the last index.
-                                treasure = new Object();
-
-                                treasure['treasure_id'] = rows[rows.length - 1].treasure_id;
-                                treasure['treasure_name'] = rows[rows.length - 1].treasure_name;
-                                treasure['description'] = rows[rows.length - 1].description;
-                                treasure['location'] = rows[rows.length - 1].location;
-                                treasure['treasure_point'] = rows[rows.length - 1].treasure_point;
-                                treasure['catchgame_cat'] = rows[rows.length - 1].catchgame_cat;
-
-                                treasures.push(treasure);
-
-                                game['game_id'] = rows[rows.length - 1].game_id;
-                                game['game_name'] = rows[rows.length - 1].game_name;
-                                game['treasure_count'] = rows[rows.length - 1].treasure_count;
-                                game['status'] = rows[rows.length - 1].status;
-                                game['participant'] = rows[rows.length - 1].participant;
-                                game['point'] = rows[rows.length - 1].point;
-                                game['treasures'] = treasures;
-                                games.push(game);
-                               
+                          
                                 obj['flag'] = Flag.REQUEST_USER_PARTICIPATING_GAME_LIST;
-                                obj['user_participating_game_list'] = games;
+
+                                // Because 'games' has 'undefined' values.
+                                // (And it is because the 'row.game_id' is always > 0. So at least 'games' has one undefiend value -> games[0] )
+                                obj['user_participating_game_list'] = games.filter(Boolean);
                                                                                            
                                 console.log(JSON.stringify(obj));
                                 wsServer.broadcastUTF(JSON.stringify(obj));
@@ -198,7 +159,7 @@ wsServer.on('request', function (request) {
                     case Flag.REQUEST_USER_POSSIBLE_GAME_LIST:
                         var usn = json['usn'];
                         var sql = `select game_id, game_name, treasure_count, status, participant, treasure_id, 
-                                   treasure_name, description, location, point, catchgame_cat 
+                                   treasure_name, description, location, point as treasure_point, catchgame_cat 
                                    from game_list natural join treasure_list
                                    where game_id not in (select game_id from user_joined_game where usn = ${usn})						
                                    and status = 1`;
@@ -208,70 +169,33 @@ wsServer.on('request', function (request) {
                                 console.log(`Wrong Parameter at flag: ${flag}.`);
                                 wsServer.broadcastUTF(`Wrong Parameter at flag: ${flag}.`);
                             } else {
-                                obj = new Object();
-                                games = [];
-                                treasures = [];
-                                game = new Object();
+                                var obj = new Object();
+                                var games = [];
 
-                                // Make json not to be redundant.(Because one game can have many treasures.)                                                      
-                                for (var i = 0; i < rows.length - 1; i++) {
-                                    treasure = new Object();
+                                for (i = 0; i < rows.length; i++) {
+                                    // Get the correct game object.
+                                    var game = createGame(games, rows[i], flag);
+                                    var treasure = createTreasure(rows[i]);
 
-                                    treasure['treasure_id'] = rows[i].treasure_id;
-                                    treasure['treasure_name'] = rows[i].treasure_name;
-                                    treasure['description'] = rows[i].description;
-                                    treasure['location'] = rows[i].location;
-                                    treasure['point'] = rows[i].point;
-                                    treasure['catchgame_cat'] = rows[i].catchgame_cat;
-
-                                    treasures.push(treasure);
-
-                                    if (rows[i].game_id != rows[i + 1].game_id) {
-                                        game['game_id'] = rows[i].game_id;
-                                        game['game_name'] = rows[i].game_name;
-                                        game['treasure_count'] = rows[i].treasure_count;
-                                        game['status'] = rows[i].status;
-                                        game['participant'] = rows[i].participant;                                        
-                                        game['treasures'] = treasures;
-                                        games.push(game);
-
-                                        game = new Object();
-                                        treasures = [];
-
-                                    }
+                                    game['treasures'].push(treasure); // Add latest treasure to end of treasures list.
 
                                 }
-                                // Push the last index.
-                                treasure = new Object();
-
-                                treasure['treasure_id'] = rows[rows.length - 1].treasure_id;
-                                treasure['treasure_name'] = rows[rows.length - 1].treasure_name;
-                                treasure['description'] = rows[rows.length - 1].description;
-                                treasure['location'] = rows[rows.length - 1].location;
-                                treasure['point'] = rows[rows.length - 1].point;
-                                treasure['catchgame_cat'] = rows[rows.length - 1].catchgame_cat;
-
-                                treasures.push(treasure);
-
-                                game['game_id'] = rows[rows.length - 1].game_id;
-                                game['game_name'] = rows[rows.length - 1].game_name;
-                                game['treasure_count'] = rows[rows.length - 1].treasure_count;
-                                game['status'] = rows[rows.length - 1].status;
-                                game['participant'] = rows[rows.length - 1].participant;                               
-                                game['treasures'] = treasures;
-                                games.push(game);
 
                                 obj['flag'] = Flag.REQUEST_USER_POSSIBLE_GAME_LIST;
-                                obj['user_possible_game_list'] = games;
+
+                                // Because 'games' has 'undefined' values.
+                                // (And it is because the 'row.game_id' is always > 0. So at least 'games' has one undefiend value -> games[0] )
+                                obj['user_possible_game_list'] = games.filter(Boolean);
 
                                 console.log(JSON.stringify(obj));
                                 wsServer.broadcastUTF(JSON.stringify(obj));
+                            
                             }
 
                         });
                         break;
 
-                        // TODO: Code set flags.
+                        
                     case Flag.SET_USER_INFO:
                         var nickname = json['nickname'];
                         var sql = `insert into user_list(nickname, tot_point) values ('${nickname}', 0)`;
@@ -436,4 +360,41 @@ wsServer.on('request', function (request) {
         }
     });
 });
+
+
+function createGame(games, row, flag) {
+    
+    if (games[row.game_id] == undefined) {// if row.game_id not in games
+
+        game = new Object();
+        game['game_id'] = row.game_id;
+        game['game_name'] = row.game_name;
+        game['treasure_count'] = row.treasure_count;
+        game['status'] = row.status;
+        game['participant'] = row.participant;
+        
+        if (flag == Flag.REQUEST_USER_PARTICIPATING_GAME_LIST) {// Because only this flag has 'point' attribute.
+            game['point'] = row.point;
+        }
+        game['treasures'] = [];
+        games[row.game_id] = game;
+        
+    }
+    
+    return games[row.game_id];
+};
+
+function createTreasure(row) {
+  
+    var treasure = new Object();
+
+    treasure['treasure_id'] = row.treasure_id;
+    treasure['treasure_name'] = row.treasure_name;
+    treasure['description'] = row.description;
+    treasure['location'] = row.location;
+    treasure['treasure_point'] = row.treasure_point;
+    treasure['catchgame_cat'] = row.catchgame_cat;
+   
+    return treasure;
+};
 
