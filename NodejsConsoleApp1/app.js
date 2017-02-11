@@ -314,19 +314,19 @@ function requestGameInfo(flag, sql) {
     });        
 };
 // Do createGame with the correct function.
-function doCreateGames(games, rows, func) {
+function doCreateGames(games, rows, populateGameFunc) {
     for (i = 0; i < rows.length; i++) {
         // Get the correct game object.
-        var game = createGame(games, rows[i], func);
+        var game = createGame(games, rows[i], populateGameFunc);
         var treasure = createTreasure(rows[i]);
 
         game['treasures'].push(treasure); // Add latest treasure to end of treasures list.
     }
 };
-function createGame(games, row, func) {    
+function createGame(games, row, populateGameFunc) {    
     if (games[row.game_id] == undefined) {// if row.game_id not in games
         game = new Object();
-        func(game, row);
+        populateGameFunc(game, row);
         games[row.game_id] = game;              
     }    
     return games[row.game_id];
