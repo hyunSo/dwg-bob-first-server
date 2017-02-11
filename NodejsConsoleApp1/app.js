@@ -292,14 +292,15 @@ function requestGameInfo(flag, sql) {
             var obj = new Object();
             var games = {};
 
-            for (i = 0; i < rows.length; i++) {
-                // Get the correct game object.
-                var game = createGame(games, rows[i], flag);
-                var treasure = createTreasure(rows[i]);
-
-                game['treasures'].push(treasure); // Add latest treasure to end of treasures list.
-
+            switch (flag) {
+                case Flag.REQUEST_USER_PARTICIPATING_GAME_LIST:
+                    doCreateGames(games, rows, populateGameWithPoint);
+                    break;
+                case Flag.REQUEST_USER_POSSIBLE_GAME_LIST:
+                    doCreateGames(games, rows, populateGame);
+                    break;
             }
+
             var games_array = Object.keys(games).map(function (key) {
                 return games[key];
             });// Convert map to array.
@@ -312,25 +313,37 @@ function requestGameInfo(flag, sql) {
         }
     });        
 };
-function createGame(games, row, flag) {    
-    if (games[row.game_id] == undefined) {// if row.game_id not in games
+// Do createGame with the correct function.
+function doCreateGames(games, rows, func) {
+    for (i = 0; i < rows.length; i++) {
+        // Get the correct game object.
+        var game = createGame(games, rows[i], func);
+        var treasure = createTreasure(rows[i]);
 
-        game = new Object();
-        game['game_id'] = row.game_id;
-        game['game_name'] = row.game_name;
-        game['treasure_count'] = row.treasure_count;
-        game['status'] = row.status;
-        game['participant'] = row.participant;
-        
-        if (flag == Flag.REQUEST_USER_PARTICIPATING_GAME_LIST) {// Because only this flag has 'point' attribute.
-            game['point'] = row.point;
-        }
-        game['treasures'] = [];
-        games[row.game_id] = game;
-        
+        game['treasures'].push(treasure); // Add latest treasure to end of treasures list.
     }
-    
+};
+function createGame(games, row, func) {    
+    if (games[row.game_id] == undefined) {// if row.game_id not in games
+        game = new Object();
+        func(game, row);
+        games[row.game_id] = game;              
+    }    
     return games[row.game_id];
+};
+// general case
+function populateGame(game, row) {
+    game['game_id'] = row.game_id;
+    game['game_name'] = row.game_name;
+    game['treasure_count'] = row.treasure_count;
+    game['status'] = row.status;
+    game['participant'] = row.participant;
+    game['treasures'] = [];
+};
+// for Flag.REQUEST_USER_PARTICIPATING_GAME_LIST, populate the game with 'point' attribute.
+function populateGameWithPoint(game, row) {
+    populateGame(game, row);
+    game['point'] = row.point;
 };
 function createTreasure(row) {  
     var treasure = new Object();
