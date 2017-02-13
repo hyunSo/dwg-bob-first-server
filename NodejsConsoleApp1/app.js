@@ -15,20 +15,11 @@ var wsServer = new webSocketServer({
     httpServer: server
 });
 // Connect to mysql db.
-/*
 var sqlConnection = mysql.createConnection({
     host: 'aasub3hy4p0s9l.crwpu2cl615x.ap-northeast-2.rds.amazonaws.com',
     user: 'bobfirst',
     password: 'bobfirst1',    
     database: 'TreasureHunt'
-});
-*/
-
-var sqlConnection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'thgus99',
-    database: 'bob_first_db'
 });
 
 /**
