@@ -45,11 +45,6 @@ const Flag = {
     SET_USER_USE_TREASURE: 20,
 };
 
-const Condition = {
-    EXIST: 1,
-    NONE: 0,
-};
-
 // Connect to WebSocket.
 wsServer.on('request', function (request) {
     console.log('Connection from origin request.origin.');
@@ -112,9 +107,10 @@ wsServer.on('request', function (request) {
                         var nickname = json['nickname'];
                         var sql = `insert into user_list(nickname, tot_point) 
                                    select * from (select '${nickname}', 0) as tmp
-                                   where not exists (select * from user_list where nickname = '${nickname}')`;
+                                   where not exists (select * from user_list
+                                                     where nickname = '${nickname}')`;
 
-                        updateDatabaseWithCondition(flag, sql, null, Condition.EXIST, 'UserExists');
+                        updateDatabaseWithCondition(flag, sql, null, 'UserExists');
                         break;
 
                     case Flag.SET_GAME_INFO_GAME_LIST:
@@ -122,7 +118,7 @@ wsServer.on('request', function (request) {
                         var treasure_count = json['treasure_count'];
                         var maker_id = json['maker_id'];
                         var sql = `insert into game_list(game_name, treasure_count, maker_id, status, participant)
-                                    values ('${game_name}', ${treasure_count}, ${maker_id}, 1, 0)`;
+                                   values ('${game_name}', ${treasure_count}, ${maker_id}, 1, 0)`;
 
                         updateDatabase(flag, sql);
                         break;
@@ -134,17 +130,20 @@ wsServer.on('request', function (request) {
                         var location = json['location'];
                         var point = json['point'];
                         var catchgame_cat = json['catchgame_cat'];
-                        var sql = `insert into treasure_list(treasure_name, description, game_id, location, point, catchgame_cat)
-                                    values ('${treasure_name}', '${description}', ${game_id}, '${location}', ${point}, ${catchgame_cat})`;
+                        var sql = `insert into treasure_list(treasure_name, description, game_id, 
+                                   location, point, catchgame_cat)
+                                   values ('${treasure_name}', '${description}', ${game_id}, 
+                                   '${location}', ${point}, ${catchgame_cat})`;
 
                         updateDatabase(flag, sql);
                         break;
 
                     case Flag.SET_GAME_STATUS_END:
                         var game_id = json['game_id'];
-                        var sql = `update game_list set status = 2 where participant = 0 and game_id = ${game_id}`;
+                        var sql = `update game_list set status = 2 
+                                   where participant = 0 and game_id = ${game_id}`;
 
-                        updateDatabaseWithCondition(flag, sql, null, Condition.EXIST, 'UserExists');
+                        updateDatabaseWithCondition(flag, sql, null, 'UserExists');
                         break;
 
                     case Flag.SET_USER_JOIN_GAME:
@@ -152,19 +151,24 @@ wsServer.on('request', function (request) {
                         var game_id = json['game_id'];
                         var sqlInsert = `insert into user_joined_game(usn, game_id, point)
                                          select * from (select ${usn}, ${game_id}, 0) as tmp
-                                         where not exists (select * from user_joined_game where usn = ${usn} and game_id = ${game_id})`;
-                        var sqlUpdate = `update game_list set participant = participant +1 where game_id = ${game_id}`;
+                                         where not exists (select * from user_joined_game
+                                                           where usn = ${usn} and 
+                                                                 game_id = ${game_id})`;
+                        var sqlUpdate = `update game_list set participant = participant +1
+                                         where game_id = ${game_id}`;
 
-                        updateDatabaseWithCondition(flag, sqlInsert, sqlUpdate, Condition.EXIST, 'UserExists');
+                        updateDatabaseWithCondition(flag, sqlInsert, sqlUpdate, 'UserExists');
                         break;
 
                     case Flag.SET_USER_EXIT_GAME:
                         var usn = json['usn'];
                         var game_id = json['game_id'];
-                        var sqlInsert = `delete from user_joined_game where usn = ${usn} and game_id = ${game_id}`;
-                        var sqlUpdate = `update game_list set participant = participant -1 where game_id = ${game_id}`;
+                        var sqlInsert = `delete from user_joined_game 
+                                         where usn = ${usn} and game_id = ${game_id}`;
+                        var sqlUpdate = `update game_list set participant = participant -1 
+                                         where game_id = ${game_id}`;
 
-                        updateDatabaseWithCondition(flag, sqlInsert, sqlUpdate, Condition.EXIST, 'UserDoesNotExist');
+                        updateDatabaseWithCondition(flag, sqlInsert, sqlUpdate, 'UserDoesNotExist');
                         break;
 
                     case Flag.SET_USER_GET_TREASURE:
@@ -173,16 +177,20 @@ wsServer.on('request', function (request) {
                         var point = json['point'];
                         var sqlInsert = `insert into user_treasure(usn, treasure_id, used)
                                          select * from (select ${usn}, ${treasure_id}, 0) as tmp
-                                         where not exists (select * from user_treasure where usn = ${usn} and treasure_id = ${treasure_id})`;
-                        var sqlUpdate = `update user_list set tot_point = tot_point +${point} where usn = ${usn}`;
+                                         where not exists (select * from user_treasure
+                                                           where usn = ${usn} and 
+                                                                 treasure_id = ${treasure_id})`;
+                        var sqlUpdate = `update user_list set tot_point = tot_point +${point} 
+                                         where usn = ${usn}`;
 
-                        updateDatabaseWithCondition(flag, sqlInsert, sqlUpdate, Condition.EXIST, 'TreasureExists');
+                        updateDatabaseWithCondition(flag, sqlInsert, sqlUpdate, 'TreasureExists');
                         break;
 
                     case Flag.SET_USER_USE_TREASURE:
                         var usn = json['usn'];
                         var treasure_id = json['treasure_id'];
-                        var sql = `update user_treasure set used = 1 where usn = ${usn} and and treasure_id = ${treasure_id}`;
+                        var sql = `update user_treasure set used = 1 
+                                   where usn = ${usn} and and treasure_id = ${treasure_id}`;
 
                         updateDatabase(flag, sql);
                         break;
@@ -287,7 +295,11 @@ function createTreasure(row) {
     return treasure;
 };
 
-// for SET cases requiring simple result(success or fail).
+/**
+ * Execute sql query requiring simple result(success or fail).
+ * @param {number} flag A flag to notify what request occurred if an error occurs.
+ * @param {string} sql  An sql query to execute.
+ */
 function updateDatabase(flag, sql) {
     sqlConnection.query(sql, function (err, rows, cols) {
         if (err) {
@@ -303,15 +315,24 @@ function updateDatabase(flag, sql) {
         }
     });
 };
-
-//for SET cases distinguishing specific condition.
-function updateDatabaseWithCondition(flag, sql1, sql2, condition, failMessage) {
+/**
+ * Execute sql queries that requre different execution depending on the first query's result.
+ * If the first query affected any rows, then send failMessage.
+ * Instead, if affected any single row, then execute the second sql query or returns success message.
+ * @param {number} flag A flag to notify what request occurred if an error occurs.
+ * @param {string} sql1 An sql query to execute at the first time.
+ * @param {string} sql2 An sql query to execute after the first query
+                        when the first query affects a row.
+                        If null, send simple result(success or failMessage).
+ * @param {string} failMessage A message if the first sql query did not affect any rows.
+ */
+function updateDatabaseWithCondition(flag, sql1, sql2, failMessage) {
     sqlConnection.query(sql1, function (err, rows, cols) {
         if (err) {
             console.log(err);
             console.log(`Wrong Parameter at flag: ${flag}.`);
             wsServer.broadcastUTF(`Wrong Parameter at flag: ${flag}.`);
-        } else if (rows.affectedRows == condition) {
+        } else if (rows.affectedRows == 1) {
             if (sql2 == null) { // if there is no need to execute extra query.
                 obj = new Object();
                 obj['flag'] = flag;
@@ -319,10 +340,10 @@ function updateDatabaseWithCondition(flag, sql1, sql2, condition, failMessage) {
                 console.log(JSON.stringify(obj));
                 wsServer.broadcastUTF(JSON.stringify(obj));
             }
-            else { // if there is second query to execute regard to condition.
+            else { // if there is extra query to execute regard to the result of the first query.
                 updateDatabase(flag, sql2);
             }
-        } else { // if the result does not satisfies given condition.
+        } else { // if the first querry affected any row, send failMessage.
             obj = new Object();
             obj['flag'] = flag;
             obj['message'] = failMessage;
