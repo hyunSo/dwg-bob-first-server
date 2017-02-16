@@ -83,7 +83,7 @@ wsServer.on('request', function (request) {
                     case Flag.REQUEST_USER_PARTICIPATING_GAME_LIST:
                         var usn = json['usn'];
                         var sql = `select T.game_id, U.point, game_name, treasure_count, status, participant, 
-                                   treasure_id, treasure_name, description, location, T.point as treasure_point, catchgame_cat 
+                                   treasure_id, treasure_name, description, location, T.point as treasure_point, catchgame_cat, target_img_name 
                                    from user_joined_game U natural join game_list G, treasure_list T 
                                    where U.usn = 1 and G.status = 1 and G.game_id = T.game_id`;
 
@@ -92,7 +92,7 @@ wsServer.on('request', function (request) {
                     case Flag.REQUEST_USER_POSSIBLE_GAME_LIST:
                         var usn = json['usn'];
                         var sql = `select game_id, game_name, treasure_count, status, participant, treasure_id, 
-                                   treasure_name, description, location, point as treasure_point, catchgame_cat 
+                                   treasure_name, description, location, point as treasure_point, catchgame_cat, target_img_name
                                    from game_list natural join treasure_list
                                    where game_id not in (select game_id from user_joined_game where usn = ${usn})						
                                    and status = 1`;
@@ -297,10 +297,11 @@ function initGame(flag, json) {
                 var location = treasures[j]['location'];
                 var point = treasures[j]['point'];
                 var catchgame_cat = treasures[j]['catchgame_cat'];
+                var target_img_name = treasures[j]['target_img_name'];
                 var sql = `insert into treasure_list(treasure_name, description, game_id, 
-                           location, point, catchgame_cat)
+                           location, point, catchgame_cat, target_img_name)
                            values ('${treasure_name}', '${description}', ${game_id}, 
-                           '${location}', ${point}, ${catchgame_cat})`;
+                           '${location}', ${point}, ${catchgame_cat}, ${target_img_name})`;
 
                 updateDatabase(flag, sql);
             }
