@@ -280,11 +280,12 @@ function createTreasure(row) {
  */
 function initGame(flag, json) {
     var game_name = json['game_name'];
-    var treasure_count = json['treasure_count'];
     var maker_id = json['maker_id'];
-    var updateQuery = `insert into game_list(game_name, treasure_count, maker_id, status, participant)
-                       values ('${game_name}', ${treasure_count}, ${maker_id}, 1, 0)`;
+    var treasures = json['Treasures'];
+    var treasure_count = treasures.length;
     var game_id = 0;
+    var updateQuery = `insert into game_list(game_name, treasure_count, maker_id, status, participant)
+                           values ('${game_name}', ${treasure_count}, ${maker_id}, 1, 0)`;
     sqlConnection.query(updateQuery, function (err, rows, cols) {
         if (err) {
             console.log(err);
@@ -292,7 +293,6 @@ function initGame(flag, json) {
             wsServer.broadcastUTF(`Wrong Parameter at flag: ${flag}.`);
         } else {
             game_id = rows.insertId;
-            var treasures = json['Treasures'];
             for (j = 0; j < treasure_count; j++) {
                 var treasure_name = treasures[j]['treasure_name'];
                 var description = treasures[j]['description'];
