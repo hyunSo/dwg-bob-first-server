@@ -315,25 +315,26 @@ function updateDatabase(flag, sql) {
         }
     });
 };
+
 /**
  * Execute sql queries that requre different execution depending on the first query's result.
- * If the first query affected any rows, then send failMessage.
+ * If the first query does not affect a single row or more than a single row, then send failMessage.
  * Instead, if affected any single row, then execute the second sql query or returns success message.
- * @param {number} flag A flag to notify what request occurred if an error occurs.
- * @param {string} sql1 An sql query to execute at the first time.
- * @param {string} sql2 An sql query to execute after the first query
-                        when the first query affects a row.
-                        If null, send simple result(success or failMessage).
- * @param {string} failMessage A message if the first sql query did not affect any rows.
+ * @param {number} flag            A flag to notify what request occurred if an error occurs.
+ * @param {string} updateQuery     An sql query to execute at the first time.
+ * @param {string} postUpdateQuery An sql query to execute after the first query
+                                   when the first query affects a row.
+                                   If null, send simple result(success or failMessage).
+ * @param {string} failMessage     A message if the first sql query did not affect any rows.
  */
-function updateDatabaseWithCondition(flag, sql1, sql2, failMessage) {
-    sqlConnection.query(sql1, function (err, rows, cols) {
+function updateDatabaseWithCondition(flag, updateQuery, postUpdateQuery, failMessage) {
+    sqlConnection.query(updateQuery, function (err, rows, cols) {
         if (err) {
             console.log(err);
             console.log(`Wrong Parameter at flag: ${flag}.`);
             wsServer.broadcastUTF(`Wrong Parameter at flag: ${flag}.`);
         } else if (rows.affectedRows == 1) {
-            if (sql2 == null) { // if there is no need to execute extra query.
+            if (postUpdateQuery == null) { // if there is no need to execute extra query.
                 obj = new Object();
                 obj['flag'] = flag;
                 obj['message'] = 'Success';
@@ -341,9 +342,9 @@ function updateDatabaseWithCondition(flag, sql1, sql2, failMessage) {
                 wsServer.broadcastUTF(JSON.stringify(obj));
             }
             else { // if there is extra query to execute regard to the result of the first query.
-                updateDatabase(flag, sql2);
+                updateDatabase(flag, postUpdateQuery);
             }
-        } else { // if the first querry affected any row, send failMessage.
+        } else { // if the first query does not affect any row or more than a row, send failMessage.
             obj = new Object();
             obj['flag'] = flag;
             obj['message'] = failMessage;
