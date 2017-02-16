@@ -36,8 +36,7 @@ const Flag = {
     REQUEST_USER_POSSIBLE_GAME_LIST: 7,
 
     SET_USER_INFO: 11,
-    SET_GAME_INFO_GAME_LIST: 12,
-    SET_GAME_INFO_TREASURE_LIST: 13,
+    SET_GAME_INFO: 12,
     SET_GAME_STATUS_END: 14,
     SET_USER_JOIN_GAME: 15,
     SET_USER_EXIT_GAME: 16,
@@ -61,10 +60,8 @@ wsServer.on('request', function (request) {
             try {
                 var json = JSON.parse(message.utf8Data);
                 var flag = json['flag'];
-
                 // Server >> Clients according to flag
                 switch (flag) {
-
                     case Flag.REQUEST_USER_INFO:
                         var nickname = json['nickname'];
                         var sql = `select usn, tot_point from user_list where nickname = '${nickname}'`;
@@ -112,30 +109,9 @@ wsServer.on('request', function (request) {
 
                         updateDatabaseWithCondition(flag, sql, null, 'UserExists');
                         break;
-
-                    case Flag.SET_GAME_INFO_GAME_LIST:
-                        var game_name = json['game_name'];
-                        var treasure_count = json['treasure_count'];
-                        var maker_id = json['maker_id'];
-                        var sql = `insert into game_list(game_name, treasure_count, maker_id, status, participant)
-                                   values ('${game_name}', ${treasure_count}, ${maker_id}, 1, 0)`;
-
-                        updateDatabase(flag, sql);
-                        break;
-
-                    case Flag.SET_GAME_INFO_TREASURE_LIST:
-                        var treasure_name = json['treasure_name'];
-                        var description = json['description'];
-                        var game_id = json['game_id'];
-                        var location = json['location'];
-                        var point = json['point'];
-                        var catchgame_cat = json['catchgame_cat'];
-                        var sql = `insert into treasure_list(treasure_name, description, game_id, 
-                                   location, point, catchgame_cat)
-                                   values ('${treasure_name}', '${description}', ${game_id}, 
-                                   '${location}', ${point}, ${catchgame_cat})`;
-
-                        updateDatabase(flag, sql);
+                    
+                    case Flag.SET_GAME_INFO:
+                        initGame(flag, json);
                         break;
 
                     case Flag.SET_GAME_STATUS_END:
@@ -296,6 +272,43 @@ function createTreasure(row) {
 };
 
 /**
+ * Insert game and treasures into the database.
+ * @param {number} flag A flag to notify what request occurred if an error occurs.
+ * @param {any} json JSON data.
+ */
+function initGame(flag, json) {
+    var game_name = json['game_name'];
+    var treasure_count = json['treasure_count'];
+    var maker_id = json['maker_id'];
+    var updateQuery = `insert into game_list(game_name, treasure_count, maker_id, status, participant)
+                       values ('${game_name}', ${treasure_count}, ${maker_id}, 1, 0)`;
+    var game_id = 0;
+    sqlConnection.query(updateQuery, function (err, rows, cols) {
+        if (err) {
+            console.log(err);
+            console.log(`Wrong Parameter at flag: ${flag}.`);
+            wsServer.broadcastUTF(`Wrong Parameter at flag: ${flag}.`);
+        } else {
+            game_id = rows.insertId;
+            var treasures = json['Treasures'];
+            for (j = 0; j < treasure_count; j++) {
+                var treasure_name = treasures[j]['treasure_name'];
+                var description = treasures[j]['description'];
+                var location = treasures[j]['location'];
+                var point = treasures[j]['point'];
+                var catchgame_cat = treasures[j]['catchgame_cat'];
+                var sql = `insert into treasure_list(treasure_name, description, game_id, 
+                           location, point, catchgame_cat)
+                           values ('${treasure_name}', '${description}', ${game_id}, 
+                           '${location}', ${point}, ${catchgame_cat})`;
+
+                updateDatabase(flag, sql);
+            }
+        }
+    });
+}
+
+/**
  * Execute sql query requiring simple result(success or fail).
  * @param {number} flag A flag to notify what request occurred if an error occurs.
  * @param {string} sql  An sql query to execute.
@@ -311,7 +324,7 @@ function updateDatabase(flag, sql) {
             obj['flag'] = flag;
             obj['message'] = 'Success';
             console.log(JSON.stringify(obj));
-            wsServer.broadcastUTF(JSON.stringify(obj));
+//            wsServer.broadcastUTF(JSON.stringify(obj));
         }
     });
 };
@@ -339,7 +352,7 @@ function updateDatabaseWithCondition(flag, updateQuery, postUpdateQuery, failMes
                 obj['flag'] = flag;
                 obj['message'] = 'Success';
                 console.log(JSON.stringify(obj));
-                wsServer.broadcastUTF(JSON.stringify(obj));
+//                wsServer.broadcastUTF(JSON.stringify(obj));
             }
             else { // if there is extra query to execute regard to the result of the first query.
                 updateDatabase(flag, postUpdateQuery);
