@@ -18,7 +18,7 @@ var wsServer = new webSocketServer({
 var sqlConnection = mysql.createConnection({
     host: 'aasub3hy4p0s9l.crwpu2cl615x.ap-northeast-2.rds.amazonaws.com',
     user: 'bobfirst',
-    password: 'bobfirst1',    
+    password: 'bobfirst1',
     database: 'TreasureHunt'
 });
 
@@ -75,12 +75,12 @@ wsServer.on('request', function (request) {
                         var usn = json['usn'];
                         var sql = `select * from user_treasure natural join treasure_list where usn = ${usn}`;
 
-                        requestUserInfo(flag, sql);                        
+                        requestUserInfo(flag, sql);
                         break;
                     case Flag.REQUEST_USER_MADE_GAME:
                         var usn = json['usn'];
                         var sql = `select * from user_made_game natural join game_list where usn = ${usn}`;
-                        
+
                         requestUserInfo(flag, sql);
                         break;
                     case Flag.REQUEST_USER_PARTICIPATING_GAME_LIST:
@@ -99,10 +99,10 @@ wsServer.on('request', function (request) {
                                    from game_list natural join treasure_list
                                    where game_id not in (select game_id from user_joined_game where usn = ${usn})						
                                    and status = 1`;
-                        
+
                         requestGameInfo(flag, sql);
                         break;
-                       
+
                     case Flag.SET_USER_INFO:
                         var nickname = json['nickname'];
                         var sql = `insert into user_list(nickname, tot_point) 
@@ -248,7 +248,7 @@ function requestGameInfo(flag, sql) {
             console.log(JSON.stringify(obj));
             wsServer.broadcastUTF(JSON.stringify(obj));
         }
-    });        
+    });
 };
 // Do createGame with the correct function.
 function doCreateGames(games, rows, populateGameFunc) {
@@ -260,12 +260,12 @@ function doCreateGames(games, rows, populateGameFunc) {
         game['treasures'].push(treasure); // Add latest treasure to end of treasures list.
     }
 };
-function createGame(games, row, populateGameFunc) {    
+function createGame(games, row, populateGameFunc) {
     if (games[row.game_id] == undefined) {// if row.game_id not in games
         game = new Object();
         populateGameFunc(game, row);
-        games[row.game_id] = game;              
-    }    
+        games[row.game_id] = game;
+    }
     return games[row.game_id];
 };
 // general case
@@ -282,7 +282,7 @@ function populateGameWithPoint(game, row) {
     populateGame(game, row);
     game['point'] = row.point;
 };
-function createTreasure(row) {  
+function createTreasure(row) {
     var treasure = new Object();
 
     treasure['treasure_id'] = row.treasure_id;
@@ -291,7 +291,7 @@ function createTreasure(row) {
     treasure['location'] = row.location;
     treasure['treasure_point'] = row.treasure_point;
     treasure['catchgame_cat'] = row.catchgame_cat;
-   
+
     return treasure;
 };
 
