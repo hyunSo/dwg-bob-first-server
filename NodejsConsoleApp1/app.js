@@ -76,9 +76,13 @@ wsServer.on('request', function (request) {
                         break;
                     case Flag.REQUEST_USER_MADE_GAME:
                         var usn = json['usn'];
-                        var sql = `select * from user_made_game natural join game_list where usn = ${usn}`;
+                        var sql = `select T.game_id, game_name, treasure_count, status, participant, 
+                                   treasure_id, treasure_name, description, location, T.point as treasure_point, 
+                                   catchgame_cat, target_img_name, treasure_img_name
+                                   from user_made_game U natural join game_list G, treasure_list T 
+                                   where U.usn = ${usn} and G.game_id = T.game_id`;
 
-                        requestUserInfo(flag, sql);
+                        requestGameInfo(flag, sql);
                         break;
                     case Flag.REQUEST_USER_PARTICIPATING_GAME_LIST:
                         var usn = json['usn'];
@@ -86,7 +90,7 @@ wsServer.on('request', function (request) {
                                    treasure_id, treasure_name, description, location, T.point as treasure_point, 
                                    catchgame_cat, target_img_name, treasure_img_name
                                    from user_joined_game U natural join game_list G, treasure_list T 
-                                   where U.usn = 1 and G.status = 1 and G.game_id = T.game_id`;
+                                   where U.usn = ${usn} and G.status = 1 and G.game_id = T.game_id`;
 
                         requestGameInfo(flag, sql);
                         break;
@@ -105,7 +109,8 @@ wsServer.on('request', function (request) {
                     case Flag.SET_USER_INFO:
                         var nickname = json['nickname'];
                         var sql = `insert into user_list(nickname, tot_point) 
-                                   select * from (select '${nickname}', 0) as tmp
+                                   select * from (select '${nickname}' as nickname, 
+                                                         0 as tot_point) as tmp
                                    where not exists (select * from user_list
                                                      where nickname = '${nickname}')`;
 
@@ -128,7 +133,8 @@ wsServer.on('request', function (request) {
                         var usn = json['usn'];
                         var game_id = json['game_id'];
                         var sqlInsert = `insert into user_joined_game(usn, game_id, point)
-                                         select * from (select ${usn}, ${game_id}, 0) as tmp
+                                         select * from (select ${usn} as usn, ${game_id} as game_id, 
+                                                               0 as used) as tmp
                                          where not exists (select * from user_joined_game
                                                            where usn = ${usn} and 
                                                                  game_id = ${game_id})`;
@@ -154,7 +160,8 @@ wsServer.on('request', function (request) {
                         var treasure_id = json['treasure_id'];
                         var point = json['point'];
                         var sqlInsert = `insert into user_treasure(usn, treasure_id, used)
-                                         select * from (select ${usn}, ${treasure_id}, 0) as tmp
+                                         select * from (select ${usn} as usn, ${treasure_id} as treasure_id,
+                                                               0 as used) as tmp
                                          where not exists (select * from user_treasure
                                                            where usn = ${usn} and 
                                                                  treasure_id = ${treasure_id})`;
@@ -168,7 +175,7 @@ wsServer.on('request', function (request) {
                         var usn = json['usn'];
                         var treasure_id = json['treasure_id'];
                         var sql = `update user_treasure set used = 1 
-                                   where usn = ${usn} and and treasure_id = ${treasure_id}`;
+                                   where usn = ${usn} and treasure_id = ${treasure_id}`;
 
                         updateDatabase(flag, sql);
                         break;
@@ -208,6 +215,9 @@ function requestGameInfo(flag, sql) {
             var games = {};
 
             switch (flag) {
+                case Flag.REQUEST_USER_MADE_GAME:
+                    doCreateGames(games,rows,populateGame);
+                    break;
                 case Flag.REQUEST_USER_PARTICIPATING_GAME_LIST:
                     doCreateGames(games, rows, populateGameWithPoint);
                     break;
