@@ -179,6 +179,11 @@ wsServer.on('request', function (request) {
 
                         updateDatabase(flag, sql);
                         break;
+                    default:
+                        console.log(`Invalid flag: ${flag}.`);
+                        wsServer.broadcastUTF(`Invalid flag: ${flag}.`);
+                        break;
+                                                
                 }
             } catch (exc) {
                 console.log(`Wrong data type at flag: ${flag}.`);
@@ -279,6 +284,8 @@ function createTreasure(row) {
     treasure['location'] = row.location;
     treasure['treasure_point'] = row.treasure_point;
     treasure['catchgame_cat'] = row.catchgame_cat;
+    treasure['target_img_name'] = row.target_img_name;
+    treasure['treasure_img_name'] = row.treasure_img_name;
 
     return treasure;
 };
@@ -337,7 +344,6 @@ function updateDatabase(flag, sql) {
             obj['flag'] = flag;
             obj['message'] = 'Success';
             console.log(JSON.stringify(obj));
-//            wsServer.broadcastUTF(JSON.stringify(obj));
         }
     });
 };
@@ -365,7 +371,6 @@ function updateDatabaseWithCondition(flag, updateQuery, postUpdateQuery, failMes
                 obj['flag'] = flag;
                 obj['message'] = 'Success';
                 console.log(JSON.stringify(obj));
-//                wsServer.broadcastUTF(JSON.stringify(obj));
             }
             else { // if there is extra query to execute regard to the result of the first query.
                 updateDatabase(flag, postUpdateQuery);
